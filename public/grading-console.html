@@ -444,6 +444,20 @@ button.enabled{
 input,select{max-width:100%;font:inherit;}
 .grade label{display:block;font-size:12px;margin:6px 0 3px;}
 .grade select{width:100%;}
+/* Derived boundaries (every Max, and E's fixed Min of 0) are shown as locked
+   readouts so they cannot be set to a value the grading scale would reject. */
+.grade .locked{
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  padding:8px 10px;
+  border:1px dashed #d1d5db;
+  border-radius:6px;
+  background:#f9fafb;
+  color:#4b5563;
+  font-size:14px;
+}
+.grade-hint{grid-column:1 / -1;margin:8px 0 0;font-size:12px;color:#4b5563;}
 #hist{display:block;width:100%;height:auto;max-width:380px;margin:auto;}
 #fileError{white-space:pre-line;}
 #fileStatus,#welcome,#fileError{margin-bottom:10px;overflow-wrap:anywhere;}
@@ -626,21 +640,40 @@ function readWorkbook(wb) {
   if (!sheet || !sheet["!ref"]) throw new Error("The first worksheet is empty.");
   const range = XLSX.utils.decode_range(sheet["!ref"]);
   if (range.e.r > 50000) throw new Error("Please use a file with no more than 50,000 student rows.");
-  if (range.s.c !== 0 || range.e.c !== 2 || range.s.r !== 0) {
-    throw new Error("Use exactly three columns, starting in A1: BITS ID, Course, Total Marks.");
+  if (range.s.c !== 0 || range.e.c < 2 || range.s.r !== 0) {
+    throw new Error("Start in cell A1 with three columns: BITS ID, Course, Total Marks.");
   }
   const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: null, raw: true, blankrows: true});
-  const expected = ["bits id", "course", "total marks"];
-  if (expected.some((name, i) => String(rows[0]?.[i] ?? "").trim().toLowerCase() !== name)) {
-    throw new Error("The first row must contain these headers in order: BITS ID, Course, Total Marks.");
+  // Headers are matched loosely so real-world variants are accepted:
+  // "Student's BITS ID" (straight or curly apostrophe), "Student ID",
+  // "Total Marks (out of 100)", "Marks", differing case and extra spacing.
+  const normalise = value => String(value ?? "")
+    .replace(/[\u2018\u2019\u02bc\u00b4`]/g, "'")   // curly apostrophes -> plain
+    .replace(/\([^)]*\)/g, " ")                      // drop "(out of 100)"
+    .replace(/[^a-z0-9]+/gi, " ")                    // punctuation -> space
+    .trim().toLowerCase();
+  const headerTests = [
+    {label: "BITS ID", test: h => /\b(bits\s*id|student\s*id|id|roll\s*n(o|umber)|student\s*s?\s*bits\s*id)\b/.test(h)},
+    {label: "Course",  test: h => /\bcourse\b|\bsubject\b/.test(h)},
+    {label: "Total Marks", test: h => /\bmarks?\b|\bscore\b|\btotal\b/.test(h)}
+  ];
+  const headers = [0, 1, 2].map(i => normalise(rows[0]?.[i]));
+  const badHeader = headerTests.findIndex((spec, i) => !spec.test(headers[i]));
+  if (badHeader !== -1) {
+    throw new Error(`Column ${["A","B","C"][badHeader]} should be “${headerTests[badHeader].label}”. ` +
+      "Row 1 must hold the headers BITS ID, Course, Total Marks in that order.");
   }
+  // Any further columns are ignored rather than rejected, so exported or
+  // annotated spreadsheets with trailing notes still import cleanly.
   const errors = [];
   const parsed = [];
   const seen = new Set();
   const empty = value => value === null || value === undefined || String(value).trim() === "";
   rows.slice(1).forEach((row, index) => {
     const rowNumber = index + 2;
-    if (row.every(empty)) return;
+    // Only the three graded columns decide whether a row is blank, so trailing
+    // notes in extra columns never turn an empty row into an error.
+    if ([0, 1, 2].every(col => empty(row[col]))) return;
     const id = String(row[0] ?? "").trim();
     const courseName = String(row[1] ?? "").trim();
     const rawMark = row[2];
@@ -737,52 +770,98 @@ ui.instructor.addEventListener("input", () => {
   updateAll();
 });
 
-function cascadeMaxFrom(index) {
-  for (let i = index + 1; i < GRADES.length; i++) {
-    const previous = document.getElementById(GRADES[i - 1] + "min").value;
-    document.getElementById(GRADES[i] + "max").value = previous === "" ? "" : Number(previous) - 1;
+const LOWEST = GRADES.length - 1; // index of E, whose Min is always 0.
+
+// A continuous scale is fully described by the cutoffs (the Min of each grade).
+// Every Max is therefore derived, A's Max is always 100 and E's Min is always 0.
+// Normalising after each edit keeps the scale valid instead of letting the user
+// land in an inverted range such as "A-: Min 70, Max 64".
+function normaliseRanges(pivot) {
+  const ranges = activeSession.ranges;
+  ranges[GRADES[LOWEST]][0] = 0;
+  // Push cutoffs below the edited one downwards so they stay strictly lower.
+  for (let i = pivot + 1; i < LOWEST; i++) {
+    if (ranges[GRADES[i]][0] >= ranges[GRADES[i - 1]][0]) {
+      ranges[GRADES[i]][0] = ranges[GRADES[i - 1]][0] - 1;
+    }
   }
+  // Push cutoffs above the edited one upwards for the same reason.
+  for (let i = pivot - 1; i >= 0; i--) {
+    if (ranges[GRADES[i]][0] <= ranges[GRADES[i + 1]][0]) {
+      ranges[GRADES[i]][0] = ranges[GRADES[i + 1]][0] + 1;
+    }
+  }
+  // Every grade still needs at least one mark, so clamp into the valid window.
+  for (let i = LOWEST - 1; i >= 0; i--) {
+    ranges[GRADES[i]][0] = Math.min(Math.max(ranges[GRADES[i]][0], LOWEST - i), 100 - i);
+  }
+  for (let i = 1; i < LOWEST; i++) {
+    if (ranges[GRADES[i]][0] >= ranges[GRADES[i - 1]][0]) {
+      ranges[GRADES[i]][0] = ranges[GRADES[i - 1]][0] - 1;
+    }
+  }
+  ranges[GRADES[0]][1] = 100;
+  for (let i = 1; i < GRADES.length; i++) ranges[GRADES[i]][1] = ranges[GRADES[i - 1]][0] - 1;
 }
-function saveRanges() {
-  if (!activeSession) return;
-  GRADES.forEach(g => {
-    activeSession.ranges[g] = ["min", "max"].map(kind => {
-      const value = document.getElementById(g + kind).value;
-      return value === "" ? NaN : Number(value);
-    });
-  });
+
+function lockedReadout(id, labelText, ariaLabel, value) {
+  const wrapper = document.createElement("div");
+  const label = document.createElement("label");
+  label.htmlFor = id;
+  label.textContent = labelText;
+  const readout = document.createElement("output");
+  readout.id = id;
+  readout.className = "locked";
+  readout.value = String(value); // keeps .value readable for validation helpers
+  readout.textContent = String(value);
+  readout.setAttribute("aria-label", `${ariaLabel} (fixed)`);
+  wrapper.append(label, readout);
+  return wrapper;
 }
+
 function buildGradeUI() {
   ui.grades.replaceChildren();
+  normaliseRanges(0);
   GRADES.forEach((g, index) => {
     const card = document.createElement("div");
     card.className = "grade";
     const title = document.createElement("strong");
     title.textContent = g;
     card.append(title);
-    ["min", "max"].forEach((kind, position) => {
-      const wrapper = document.createElement("div");
-      wrapper.className = kind;
+
+    const minWrapper = document.createElement("div");
+    minWrapper.className = "min";
+    if (index === LOWEST) {
+      card.append(lockedReadout(g + "min", "Min", `${g} minimum mark`, 0));
+    } else {
       const label = document.createElement("label");
-      label.htmlFor = g + kind;
-      label.textContent = kind === "min" ? "Min" : "Max";
+      label.htmlFor = g + "min";
+      label.textContent = "Min";
       const select = document.createElement("select");
-      select.id = g + kind;
-      select.setAttribute("aria-label", `${g} ${kind === "min" ? "minimum" : "maximum"} mark`);
+      select.id = g + "min";
+      select.setAttribute("aria-label", `${g} minimum mark`);
       select.setAttribute("aria-describedby", "rangeError");
-      for (let value = 0; value <= 100; value++) select.add(new Option(value, value));
-      select.value = activeSession.ranges[g][position];
+      // Only offer cutoffs that leave room for the grades above and below.
+      for (let value = LOWEST - index; value <= 100 - index; value++) select.add(new Option(value, value));
+      select.value = activeSession.ranges[g][0];
       select.addEventListener("change", () => {
-        if (kind === "min") cascadeMaxFrom(index);
-        saveRanges();
+        activeSession.ranges[g][0] = Number(select.value);
+        normaliseRanges(index);
+        buildGradeUI(); // Re-render so every derived Max and shifted Min stays in step.
         markEdited();
         updateAll();
       });
-      wrapper.append(label, select);
-      card.append(wrapper);
-    });
+      minWrapper.append(label, select);
+      card.append(minWrapper);
+    }
+
+    card.append(lockedReadout(g + "max", "Max", `${g} maximum mark`, activeSession.ranges[g][1]));
     ui.grades.append(card);
   });
+  const hint = document.createElement("p");
+  hint.className = "grade-hint";
+  hint.textContent = "Set each grade's minimum mark. Maximums follow automatically so the scale always covers 0–100 with no gaps or overlaps.";
+  ui.grades.append(hint);
 }
 
 ui.resetRanges.addEventListener("click", () => {
