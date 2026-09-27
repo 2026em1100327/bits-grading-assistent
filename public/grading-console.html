@@ -768,52 +768,98 @@ ui.instructor.addEventListener("input", () => {
   updateAll();
 });
 
-function cascadeMaxFrom(index) {
-  for (let i = index + 1; i < GRADES.length; i++) {
-    const previous = document.getElementById(GRADES[i - 1] + "min").value;
-    document.getElementById(GRADES[i] + "max").value = previous === "" ? "" : Number(previous) - 1;
+const LOWEST = GRADES.length - 1; // index of E, whose Min is always 0.
+
+// A continuous scale is fully described by the cutoffs (the Min of each grade).
+// Every Max is therefore derived, A's Max is always 100 and E's Min is always 0.
+// Normalising after each edit keeps the scale valid instead of letting the user
+// land in an inverted range such as "A-: Min 70, Max 64".
+function normaliseRanges(pivot) {
+  const ranges = activeSession.ranges;
+  ranges[GRADES[LOWEST]][0] = 0;
+  // Push cutoffs below the edited one downwards so they stay strictly lower.
+  for (let i = pivot + 1; i < LOWEST; i++) {
+    if (ranges[GRADES[i]][0] >= ranges[GRADES[i - 1]][0]) {
+      ranges[GRADES[i]][0] = ranges[GRADES[i - 1]][0] - 1;
+    }
   }
+  // Push cutoffs above the edited one upwards for the same reason.
+  for (let i = pivot - 1; i >= 0; i--) {
+    if (ranges[GRADES[i]][0] <= ranges[GRADES[i + 1]][0]) {
+      ranges[GRADES[i]][0] = ranges[GRADES[i + 1]][0] + 1;
+    }
+  }
+  // Every grade still needs at least one mark, so clamp into the valid window.
+  for (let i = LOWEST - 1; i >= 0; i--) {
+    ranges[GRADES[i]][0] = Math.min(Math.max(ranges[GRADES[i]][0], LOWEST - i), 100 - i);
+  }
+  for (let i = 1; i < LOWEST; i++) {
+    if (ranges[GRADES[i]][0] >= ranges[GRADES[i - 1]][0]) {
+      ranges[GRADES[i]][0] = ranges[GRADES[i - 1]][0] - 1;
+    }
+  }
+  ranges[GRADES[0]][1] = 100;
+  for (let i = 1; i < GRADES.length; i++) ranges[GRADES[i]][1] = ranges[GRADES[i - 1]][0] - 1;
 }
-function saveRanges() {
-  if (!activeSession) return;
-  GRADES.forEach(g => {
-    activeSession.ranges[g] = ["min", "max"].map(kind => {
-      const value = document.getElementById(g + kind).value;
-      return value === "" ? NaN : Number(value);
-    });
-  });
+
+function lockedReadout(id, labelText, ariaLabel, value) {
+  const wrapper = document.createElement("div");
+  const label = document.createElement("label");
+  label.htmlFor = id;
+  label.textContent = labelText;
+  const readout = document.createElement("output");
+  readout.id = id;
+  readout.className = "locked";
+  readout.value = String(value); // keeps .value readable for validation helpers
+  readout.textContent = String(value);
+  readout.setAttribute("aria-label", `${ariaLabel} (fixed)`);
+  wrapper.append(label, readout);
+  return wrapper;
 }
+
 function buildGradeUI() {
   ui.grades.replaceChildren();
+  normaliseRanges(0);
   GRADES.forEach((g, index) => {
     const card = document.createElement("div");
     card.className = "grade";
     const title = document.createElement("strong");
     title.textContent = g;
     card.append(title);
-    ["min", "max"].forEach((kind, position) => {
-      const wrapper = document.createElement("div");
-      wrapper.className = kind;
+
+    const minWrapper = document.createElement("div");
+    minWrapper.className = "min";
+    if (index === LOWEST) {
+      card.append(lockedReadout(g + "min", "Min", `${g} minimum mark`, 0));
+    } else {
       const label = document.createElement("label");
-      label.htmlFor = g + kind;
-      label.textContent = kind === "min" ? "Min" : "Max";
+      label.htmlFor = g + "min";
+      label.textContent = "Min";
       const select = document.createElement("select");
-      select.id = g + kind;
-      select.setAttribute("aria-label", `${g} ${kind === "min" ? "minimum" : "maximum"} mark`);
+      select.id = g + "min";
+      select.setAttribute("aria-label", `${g} minimum mark`);
       select.setAttribute("aria-describedby", "rangeError");
-      for (let value = 0; value <= 100; value++) select.add(new Option(value, value));
-      select.value = activeSession.ranges[g][position];
+      // Only offer cutoffs that leave room for the grades above and below.
+      for (let value = LOWEST - index; value <= 100 - index; value++) select.add(new Option(value, value));
+      select.value = activeSession.ranges[g][0];
       select.addEventListener("change", () => {
-        if (kind === "min") cascadeMaxFrom(index);
-        saveRanges();
+        activeSession.ranges[g][0] = Number(select.value);
+        normaliseRanges(index);
+        buildGradeUI(); // Re-render so every derived Max and shifted Min stays in step.
         markEdited();
         updateAll();
       });
-      wrapper.append(label, select);
-      card.append(wrapper);
-    });
+      minWrapper.append(label, select);
+      card.append(minWrapper);
+    }
+
+    card.append(lockedReadout(g + "max", "Max", `${g} maximum mark`, activeSession.ranges[g][1]));
     ui.grades.append(card);
   });
+  const hint = document.createElement("p");
+  hint.className = "grade-hint";
+  hint.textContent = "Set each grade's minimum mark. Maximums follow automatically so the scale always covers 0–100 with no gaps or overlaps.";
+  ui.grades.append(hint);
 }
 
 ui.resetRanges.addEventListener("click", () => {
