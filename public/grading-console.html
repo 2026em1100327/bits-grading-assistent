@@ -626,14 +626,31 @@ function readWorkbook(wb) {
   if (!sheet || !sheet["!ref"]) throw new Error("The first worksheet is empty.");
   const range = XLSX.utils.decode_range(sheet["!ref"]);
   if (range.e.r > 50000) throw new Error("Please use a file with no more than 50,000 student rows.");
-  if (range.s.c !== 0 || range.e.c !== 2 || range.s.r !== 0) {
-    throw new Error("Use exactly three columns, starting in A1: BITS ID, Course, Total Marks.");
+  if (range.s.c !== 0 || range.e.c < 2 || range.s.r !== 0) {
+    throw new Error("Start in cell A1 with three columns: BITS ID, Course, Total Marks.");
   }
   const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: null, raw: true, blankrows: true});
-  const expected = ["bits id", "course", "total marks"];
-  if (expected.some((name, i) => String(rows[0]?.[i] ?? "").trim().toLowerCase() !== name)) {
-    throw new Error("The first row must contain these headers in order: BITS ID, Course, Total Marks.");
+  // Headers are matched loosely so real-world variants are accepted:
+  // "Student's BITS ID" (straight or curly apostrophe), "Student ID",
+  // "Total Marks (out of 100)", "Marks", differing case and extra spacing.
+  const normalise = value => String(value ?? "")
+    .replace(/[\u2018\u2019\u02bc\u00b4`]/g, "'")   // curly apostrophes -> plain
+    .replace(/\([^)]*\)/g, " ")                      // drop "(out of 100)"
+    .replace(/[^a-z0-9]+/gi, " ")                    // punctuation -> space
+    .trim().toLowerCase();
+  const headerTests = [
+    {label: "BITS ID", test: h => /\b(bits\s*id|student\s*id|id|roll\s*n(o|umber)|student\s*s?\s*bits\s*id)\b/.test(h)},
+    {label: "Course",  test: h => /\bcourse\b|\bsubject\b/.test(h)},
+    {label: "Total Marks", test: h => /\bmarks?\b|\bscore\b|\btotal\b/.test(h)}
+  ];
+  const headers = [0, 1, 2].map(i => normalise(rows[0]?.[i]));
+  const badHeader = headerTests.findIndex((spec, i) => !spec.test(headers[i]));
+  if (badHeader !== -1) {
+    throw new Error(`Column ${["A","B","C"][badHeader]} should be “${headerTests[badHeader].label}”. ` +
+      "Row 1 must hold the headers BITS ID, Course, Total Marks in that order.");
   }
+  // Any further columns are ignored rather than rejected, so exported or
+  // annotated spreadsheets with trailing notes still import cleanly.
   const errors = [];
   const parsed = [];
   const seen = new Set();
