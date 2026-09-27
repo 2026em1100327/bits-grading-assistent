@@ -671,7 +671,9 @@ function readWorkbook(wb) {
   const empty = value => value === null || value === undefined || String(value).trim() === "";
   rows.slice(1).forEach((row, index) => {
     const rowNumber = index + 2;
-    if (row.every(empty)) return;
+    // Only the three graded columns decide whether a row is blank, so trailing
+    // notes in extra columns never turn an empty row into an error.
+    if ([0, 1, 2].every(col => empty(row[col]))) return;
     const id = String(row[0] ?? "").trim();
     const courseName = String(row[1] ?? "").trim();
     const rawMark = row[2];
