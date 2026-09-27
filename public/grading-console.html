@@ -444,6 +444,20 @@ button.enabled{
 input,select{max-width:100%;font:inherit;}
 .grade label{display:block;font-size:12px;margin:6px 0 3px;}
 .grade select{width:100%;}
+/* Derived boundaries (every Max, and E's fixed Min of 0) are shown as locked
+   readouts so they cannot be set to a value the grading scale would reject. */
+.grade .locked{
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  padding:8px 10px;
+  border:1px dashed #d1d5db;
+  border-radius:6px;
+  background:#f9fafb;
+  color:#4b5563;
+  font-size:14px;
+}
+.grade-hint{margin:8px 0 0;font-size:12px;color:#4b5563;}
 #hist{display:block;width:100%;height:auto;max-width:380px;margin:auto;}
 #fileError{white-space:pre-line;}
 #fileStatus,#welcome,#fileError{margin-bottom:10px;overflow-wrap:anywhere;}
