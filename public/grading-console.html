@@ -466,6 +466,17 @@ input,select{max-width:100%;font:inherit;}
 @media(max-width:850px){.workspace{grid-template-columns:1fr;} .controls{grid-template-columns:1fr;} .file-guidance{grid-column:auto;}}
 @media(max-width:400px){.grade-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .actions{flex-wrap:wrap;} .container{padding:10px;}}
 @media(prefers-reduced-motion:reduce){.grade.lift,button.enabled,.grade-summary span.pulse{transform:none;}}
+.curve-btn{width:100%;margin-bottom:10px}
+.students{margin-top:18px;background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.students summary{cursor:pointer;font-weight:600}
+.students .filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.students .filters input,.students .filters select{flex:1;min-width:140px}
+.table-wrap{max-height:340px;overflow:auto}
+.students table{width:100%;border-collapse:collapse;font-size:14px}
+.students th,.students td{padding:6px 8px;border-bottom:1px solid #eee;text-align:left}
+.students th{position:sticky;top:0;background:#f5f3ff}
+.students tr.borderline td{background:#fff7ed}
+.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;background:#fed7aa;color:#9a3412}
 </style>
 </head>
 
@@ -528,6 +539,7 @@ input,select{max-width:100%;font:inherit;}
 
   <!-- GRADING -->
   <div class="panel">
+    <button class="secondary curve-btn" id="autoCurve" disabled title="Sets cutoffs from the class mean and standard deviation">Auto-Suggest Ranges (Relative Curve)</button>
     <div class="grade-grid" id="grades"></div>
     <div class="error" id="rangeError" role="alert"></div>
 
@@ -554,6 +566,18 @@ input,select{max-width:100%;font:inherit;}
   </div>
 </div>
 
+<details class="students" id="studentsBox" hidden>
+  <summary>Student marks <span id="studentCount"></span></summary>
+  <div class="filters">
+    <input id="studentSearch" placeholder="Search BITS ID" aria-label="Search BITS ID">
+    <select id="gradeFilter" aria-label="Filter by grade"><option value="">All grades</option><option value="__border">Borderline only</option></select>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>BITS ID</th><th>Marks</th><th>Grade</th><th>Note</th></tr></thead>
+    <tbody id="studentRows"></tbody>
+  </table></div>
+</details>
+
 </div>
 
 <script>
@@ -563,7 +587,7 @@ input,select{max-width:100%;font:inherit;}
 const ui = Object.fromEntries([
   "instructor", "file", "course", "welcome", "grades", "rangeError",
   "download", "resetRanges", "hist", "min", "max", "avg", "med",
-  "gradeSummary", "timerArc", "timerText", "thankyou", "fileError", "fileStatus"
+  "gradeSummary", "timerArc", "timerText", "thankyou", "fileError", "fileStatus", "autoCurve"
 ].map(id => [id, document.getElementById(id)]));
 const GRADES = ["A", "A-", "B", "B-", "C", "C-", "D", "E"];
 const DEFAULTS = {
@@ -906,7 +930,65 @@ function updateAll() {
   drawHistogram();
   computeStats();
   computeGradeSummary(error);
+  ui.autoCurve.disabled = !activeSession || rows.length < 2;
+  renderStudents(error);
 }
+
+const BORDER = 2; // marks within this many points below a higher cutoff are flagged
+function borderlineNote(mark, grade) {
+  const i = GRADES.indexOf(grade);
+  if (i <= 0) return "";
+  const gap = activeSession.ranges[GRADES[i - 1]][0] - mark;
+  return gap <= BORDER ? `${gap} mark${gap > 1 ? "s" : ""} below ${GRADES[i - 1]}` : "";
+}
+function renderStudents(error) {
+  const box = document.getElementById("studentsBox");
+  const body = document.getElementById("studentRows");
+  const rows = selectedRows();
+  box.hidden = !activeSession || !rows.length;
+  body.replaceChildren();
+  if (box.hidden) return;
+  const filterSel = document.getElementById("gradeFilter");
+  if (filterSel.options.length === 2) GRADES.forEach(g => filterSel.add(new Option(g, g)));
+  const q = document.getElementById("studentSearch").value.trim().toLowerCase();
+  const f = filterSel.value;
+  let border = 0, shown = 0;
+  rows.slice().sort((a, b) => b["Total Marks"] - a["Total Marks"]).forEach(row => {
+    const mark = row["Total Marks"];
+    const grade = error ? "—" : gradeFor(mark);
+    const note = error ? "" : borderlineNote(mark, grade);
+    if (note) border++;
+    if (q && !String(row["BITS ID"]).toLowerCase().includes(q)) return;
+    if (f === "__border" ? !note : f && f !== grade) return;
+    if (shown++ >= 500) return;
+    const tr = document.createElement("tr");
+    if (note) tr.className = "borderline";
+    [row["BITS ID"], mark, grade].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); });
+    const td = document.createElement("td");
+    if (note) { const b = document.createElement("span"); b.className = "badge"; b.textContent = note; td.append(b); }
+    tr.append(td);
+    body.append(tr);
+  });
+  document.getElementById("studentCount").textContent = `(${rows.length} students, ${border} borderline)`;
+}
+document.getElementById("studentSearch").addEventListener("input", () => updateAll());
+document.getElementById("gradeFilter").addEventListener("change", () => updateAll());
+
+// Relative grading: cutoffs at mean + k·σ, the common BITS-style curve.
+const CURVE_K = [1.5, 1.0, 0.5, 0, -0.5, -1.0, -1.5];
+ui.autoCurve.addEventListener("click", () => {
+  const marks = selectedRows().map(r => r["Total Marks"]);
+  if (marks.length < 2) return;
+  const mean = marks.reduce((s, m) => s + m, 0) / marks.length;
+  const std = Math.sqrt(marks.reduce((s, m) => s + (m - mean) ** 2, 0) / marks.length);
+  if (!(std > 0)) { alert("All marks are identical, so a relative curve cannot be computed."); return; }
+  if (!confirm(`Set cutoffs from class mean ${mean.toFixed(1)} and std dev ${std.toFixed(1)}? You can still adjust them afterwards.`)) return;
+  CURVE_K.forEach((k, i) => { activeSession.ranges[GRADES[i]][0] = Math.round(Math.min(100, Math.max(0, mean + k * std))); });
+  normaliseRanges(0);
+  buildGradeUI();
+  markEdited();
+  updateAll();
+});
 
 function drawHistogram() {
   if (histogramFrame !== null) cancelAnimationFrame(histogramFrame);
@@ -942,6 +1024,24 @@ function drawHistogram() {
       ctx.fillText(`${i * 10}-${i === 9 ? 100 : i * 10 + 9}`, x + 13.5, 228);
       ctx.fillText(String(count), x + 13.5, Math.max(12, 205 - height));
     });
+    // Grade cutoff markers, synced to the current boundaries.
+    if (activeSession && !validateRanges()) {
+      GRADES.slice(0, LOWEST).forEach((g, i) => {
+        const cut = activeSession.ranges[g][0];
+        const px = 20 + cut / 100 * 342;
+        ctx.fillStyle = i % 2 ? "rgba(91,60,196,0.05)" : "rgba(91,60,196,0.10)";
+        const top = 20 + activeSession.ranges[g][1] / 100 * 342 + (i === 0 ? 8 : 0);
+        ctx.fillRect(px, 14, Math.max(0, Math.min(top, 362) - px), 196);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(px, 14); ctx.lineTo(px, 210); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#b45309";
+        ctx.font = "bold 9px Arial";
+        ctx.fillText(g, px + 7, 10);
+      });
+    }
     // A constant dataset has no defined normal density; omit the curve.
     if (std > 0) {
       ctx.strokeStyle = "#dc2626";
