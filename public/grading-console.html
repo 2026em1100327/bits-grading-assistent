@@ -1315,34 +1315,162 @@ function drawHistogram() {
 }
 
 function computeStats() {
-  const marks = selectedRows().map(row => row["Total Marks"]).sort((a,b) => a - b);
-  if (!marks.length) {
-    [ui.min, ui.max, ui.avg, ui.med].forEach(element => { element.textContent = "—"; });
+  const summary = describeStats(courseMarks());
+  const cells = [ui.min, ui.max, ui.avg, ui.med, ui.sd, ui.quart, ui.passRate, ui.skew];
+  if (!summary) {
+    cells.forEach(element => { element.textContent = "—"; });
+    ui.passCard.className = "stat";
     return;
   }
-  ui.min.textContent = marks[0];
-  ui.max.textContent = marks[marks.length - 1];
-  ui.avg.textContent = (marks.reduce((sum, mark) => sum + mark, 0) / marks.length).toFixed(2);
-  const middle = Math.floor(marks.length / 2);
-  ui.med.textContent = marks.length % 2 ? marks[middle] : (marks[middle - 1] + marks[middle]) / 2;
+  ui.min.textContent = summary.min;
+  ui.max.textContent = summary.max;
+  ui.avg.textContent = summary.mean.toFixed(2);
+  ui.med.textContent = Number(summary.median.toFixed(1));
+  ui.sd.textContent = summary.std.toFixed(2);
+  ui.quart.textContent = `${Number(summary.q1.toFixed(1))} / ${Number(summary.q3.toFixed(1))}`;
+  ui.skew.textContent = Math.abs(summary.skew) < 0.25 ? "Balanced"
+    : summary.skew < 0 ? "High-scoring" : "Low-scoring";
+  const counts = gradeCounts();
+  if (!counts) { ui.passRate.textContent = "—"; ui.passCard.className = "stat"; return; }
+  const passed = summary.n - counts.E;
+  const rate = passed / summary.n * 100;
+  ui.passRate.textContent = `${rate.toFixed(1)}%`;
+  ui.passCard.className = "stat " + (rate >= 90 ? "good" : rate >= 80 ? "warn" : "bad");
 }
+
 function computeGradeSummary(error) {
   ui.gradeSummary.replaceChildren();
+  ui.distBar.replaceChildren();
+  ui.distLegend.replaceChildren();
+  ui.flags.replaceChildren();
   if (!activeSession) return;
   if (error) {
     ui.gradeSummary.textContent = "Fix the grade ranges to see the distribution.";
     previousSummary = {};
     return;
   }
-  const counts = Object.fromEntries(GRADES.map(g => [g, 0]));
-  selectedRows().forEach(row => { counts[gradeFor(row["Total Marks"])]++; });
+  const counts = gradeCounts();
+  const total = selectedRows().length;
   GRADES.forEach(g => {
     const span = document.createElement("span");
     span.textContent = `${g}: ${counts[g]}`;
     ui.gradeSummary.append(span);
   });
+  // Stacked proportion bar: the share of the cohort in each grade, at a glance.
+  if (total) {
+    GRADES.forEach(g => {
+      if (!counts[g]) return;
+      const share = counts[g] / total * 100;
+      const cell = document.createElement("div");
+      cell.style.flexGrow = String(counts[g]);
+      cell.style.flexBasis = "0";
+      cell.style.background = GRADE_COLOURS[g];
+      cell.title = `${g}: ${counts[g]} student(s), ${share.toFixed(1)}%`;
+      cell.textContent = share >= 7 ? `${g} ${share.toFixed(0)}%` : "";
+      ui.distBar.append(cell);
+      const legend = document.createElement("span");
+      const swatch = document.createElement("i");
+      swatch.style.background = GRADE_COLOURS[g];
+      legend.append(swatch, document.createTextNode(`${g} · ${counts[g]} (${share.toFixed(1)}%)`));
+      ui.distLegend.append(legend);
+    });
+    ui.distBar.setAttribute("aria-label", "Grade shares: " +
+      GRADES.filter(g => counts[g]).map(g => `${g} ${(counts[g] / total * 100).toFixed(1)} percent`).join(", "));
+    renderFlags(counts, total);
+  }
   previousSummary = counts;
 }
+
+// Academic-health notices: grade inflation and failure rates are exactly what a
+// course coordinator is asked about before grades are accepted.
+function renderFlags(counts, total) {
+  const pct = n => n / total * 100;
+  const notices = [];
+  const top = counts.A + counts["A-"];
+  if (pct(top) > 25) notices.push(["", `A and A- together are ${pct(top).toFixed(1)}% of the class. Most departments expect roughly 15–25%.`]);
+  if (pct(counts.E) > 15) notices.push(["bad", `${pct(counts.E).toFixed(1)}% of students are in E. Consider reviewing the lower cutoffs or awarding grace marks.`]);
+  if (counts.A === 0 && total >= 10) notices.push(["", "No student is receiving an A. Check whether the A cutoff is too high for this cohort."]);
+  const empty = GRADES.filter(g => !counts[g]);
+  if (empty.length >= 3) notices.push(["", `These grades have no students: ${empty.join(", ")}. The scale may be wider than this cohort needs.`]);
+  if (!notices.length) notices.push(["ok", "This distribution looks healthy: no grade inflation or unusual failure rate detected."]);
+  notices.forEach(([kind, text]) => {
+    const div = document.createElement("div");
+    div.className = "flag" + (kind ? " " + kind : "");
+    div.textContent = text;
+    ui.flags.append(div);
+  });
+}
+
+// ===== COURSE SUMMARY REPORT (printable, for departmental records) =====
+function reportFacts(error) {
+  const rows = selectedRows();
+  if (!activeSession || !rows.length || error) return null;
+  const s = describeStats(courseMarks());
+  const counts = gradeCounts();
+  const elapsed = elapsedTime();
+  const grace = graceMarks();
+  return [
+    ["Course", ui.course.value],
+    ["Instructor", ui.instructor.value.trim() || "—"],
+    ["Students graded", String(s.n)],
+    ["Grace marks applied", grace ? `+${grace} to every student` : "None"],
+    ["Mean / Median", `${s.mean.toFixed(2)} / ${Number(s.median.toFixed(1))}`],
+    ["Standard deviation", s.std.toFixed(2)],
+    ["Lowest / Highest mark", `${s.min} / ${s.max}`],
+    ["Quartiles (Q1 / Q3)", `${Number(s.q1.toFixed(1))} / ${Number(s.q3.toFixed(1))}`],
+    ["Pass rate", `${((s.n - counts.E) / s.n * 100).toFixed(1)}% (${s.n - counts.E} of ${s.n})`],
+    ["Grade boundaries", GRADES.map(g => `${g} ${activeSession.ranges[g][0]}–${activeSession.ranges[g][1]}`).join(" · ")],
+    ["Grade distribution", GRADES.map(g => `${g}: ${counts[g]}`).join(" · ")],
+    ["Grading time", `${Math.floor(elapsed / 60000)} min ${Math.floor(elapsed / 1000) % 60} sec`],
+    ["Prepared", new Date().toLocaleString()]
+  ];
+}
+function renderReport(error) {
+  const facts = reportFacts(error);
+  ui.report.hidden = !facts;
+  ui.printReport.disabled = !facts;
+  ui.reportRows.replaceChildren();
+  if (!facts) return;
+  facts.forEach(([label, value]) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = label;
+    const td = document.createElement("td");
+    td.textContent = value;
+    tr.append(th, td);
+    ui.reportRows.append(tr);
+  });
+}
+ui.copyReport.addEventListener("click", async () => {
+  const facts = reportFacts(activeSession ? validateRanges() : "");
+  if (!facts) return;
+  const text = facts.map(([l, v]) => `${l}\t${v}`).join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    ui.copyStatus.textContent = "Summary copied. Paste it into Excel, email or a report.";
+  } catch {
+    ui.copyStatus.textContent = "Copying was blocked by the browser. Use Print / save as PDF instead.";
+  }
+});
+[ui.printReport, ui.printReport2].forEach(button => button.addEventListener("click", () => window.print()));
+
+// ===== DRAG AND DROP UPLOAD =====
+["dragenter", "dragover"].forEach(type => ui.dropzone.addEventListener(type, event => {
+  event.preventDefault();
+  ui.dropzone.classList.add("over");
+}));
+["dragleave", "dragend"].forEach(type => ui.dropzone.addEventListener(type, () => ui.dropzone.classList.remove("over")));
+ui.dropzone.addEventListener("drop", event => {
+  event.preventDefault();
+  ui.dropzone.classList.remove("over");
+  const dropped = event.dataTransfer?.files?.[0];
+  if (!dropped) return;
+  const transfer = new DataTransfer();
+  transfer.items.add(dropped);
+  ui.file.files = transfer.files;
+  ui.file.dispatchEvent(new Event("change"));
+});
 
 function csvCell(value) {
   let text = String(value ?? "");
