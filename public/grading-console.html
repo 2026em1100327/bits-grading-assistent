@@ -973,20 +973,56 @@ ui.course.addEventListener("change", () => {
   activeSession = null;
   previousSummary = {};
   ui.thankyou.textContent = "";
+  ui.cutoffImpact.textContent = "";
   if (!ui.course.value) {
     ui.grades.replaceChildren();
+    ui.grace.disabled = true;
+    ui.grace.value = 0;
+    ui.graceValue.textContent = "+0";
     updateAll();
     renderTimer();
     return;
   }
   if (!sessions.has(ui.course.value)) sessions.set(ui.course.value, {
-    ranges: copyDefaults(), elapsed: 0, runningSince: null, finalizeCount: 0
+    ranges: copyDefaults(), elapsed: 0, runningSince: null, finalizeCount: 0, grace: 0
   });
   activeSession = sessions.get(ui.course.value);
+  ui.grace.disabled = false;
+  ui.grace.value = activeSession.grace;
+  ui.graceValue.textContent = "+" + activeSession.grace;
   buildGradeUI();
   startTimer();
   updateAll();
 });
+
+// Grace marks: faculty committees routinely debate awarding 1-5 marks to the
+// whole cohort. This shows the effect instantly, without touching the raw file.
+ui.grace.addEventListener("input", () => {
+  if (!activeSession) return;
+  const before = gradeCounts();
+  activeSession.grace = Number(ui.grace.value);
+  ui.graceValue.textContent = "+" + activeSession.grace;
+  const after = gradeCounts();
+  ui.graceImpact.textContent = describeShift(before, after, activeSession.grace);
+  markEdited();
+  updateAll();
+});
+function gradeCounts() {
+  if (!activeSession || validateRanges()) return null;
+  const counts = Object.fromEntries(GRADES.map(g => [g, 0]));
+  selectedRows().forEach(row => { counts[gradeFor(markOf(row))]++; });
+  return counts;
+}
+function describeShift(before, after, grace) {
+  if (!before || !after) return "Fix the grade ranges to see the effect of grace marks.";
+  if (!grace) return "No grace marks applied. Grades reflect the marks in your file.";
+  const rescued = after.E === undefined ? 0 : before.E - after.E;
+  const moved = GRADES.reduce((n, g, i) => n + Math.max(0, after[g] - before[g]) * (i === 0 ? 1 : 1), 0);
+  const changed = GRADES.reduce((n, g) => n + Math.abs(after[g] - before[g]), 0) / 2;
+  return `Awarding +${grace} mark${grace > 1 ? "s" : ""} to everyone moves ${Math.round(changed)} student(s) into a higher grade` +
+    (rescued > 0 ? `, including ${rescued} who would no longer be in E.` : ".") +
+    " Raw marks in your file are unchanged.";
+}
 
 ui.instructor.addEventListener("input", () => {
   if (activeSession) markEdited();
