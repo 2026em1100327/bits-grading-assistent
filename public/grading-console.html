@@ -510,6 +510,96 @@ input,select{max-width:100%;font:inherit;}
 .students th{position:sticky;top:0;background:#f5f3ff}
 .students tr.borderline td{background:#fff7ed}
 .badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;background:#fed7aa;color:#9a3412}
+
+/* ===== REFRESHED SURFACES ===== */
+.panel,.students{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius);padding:16px;background:var(--surface);}
+.panel h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+button{border-radius:10px;background:var(--brand);}
+button:hover:not(:disabled){filter:brightness(1.08);}
+button.secondary{background:#eef1f7;color:var(--ink);border:1px solid var(--line);}
+input,select{border-radius:10px;border:1px solid #cbd5e1;background:#fff;}
+input:hover,select:hover{border-color:#a5b4fc;}
+.workspace{grid-template-columns:minmax(0,460px) minmax(0,1fr);}
+
+/* ===== KPI CARDS ===== */
+.stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+.stat{
+  background:linear-gradient(180deg,#fbfcff,#f4f6fc);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:8px 6px;
+  font-size:11px;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.stat b{display:block;margin-top:3px;font-size:17px;color:var(--ink);text-transform:none;letter-spacing:0;}
+.stat.good b{color:var(--ok)}
+.stat.warn b{color:var(--warn)}
+.stat.bad b{color:var(--bad)}
+
+/* ===== STACKED GRADE PROPORTION BAR ===== */
+.dist-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin-top:12px;background:#f1f5f9;}
+.dist-bar div{
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;color:#fff;
+  min-width:0;transition:flex-grow .35s ease;
+}
+.dist-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:11px;color:var(--ink-soft);}
+.dist-legend span{display:flex;align-items:center;gap:5px;}
+.dist-legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+/* ===== COMPLIANCE NOTICES ===== */
+.flags{margin-top:10px;display:grid;gap:6px;}
+.flag{
+  font-size:12px;line-height:1.45;padding:8px 10px;border-radius:10px;
+  border-left:4px solid var(--warn);background:#fffbeb;color:#92400e;
+}
+.flag.bad{border-left-color:var(--bad);background:#fef2f2;color:#991b1b;}
+.flag.ok{border-left-color:var(--ok);background:#ecfdf5;color:#065f46;}
+
+/* ===== GRACE MARKS SIMULATOR ===== */
+.grace{
+  margin-bottom:12px;padding:12px;border:1px dashed #c7d2fe;border-radius:12px;background:var(--brand-soft);
+}
+.grace .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;}
+.grace label{font-size:12px;font-weight:600;color:var(--brand-deep);}
+.grace input[type=range]{width:100%;accent-color:var(--brand);padding:0;border:0;background:none;}
+.grace .value{font-size:20px;font-weight:700;color:var(--brand-deep);min-width:42px;text-align:right;}
+.grace .impact{margin:8px 0 0;font-size:12px;line-height:1.5;color:#3730a3;}
+
+/* ===== CUTOFF IMPACT PILL ===== */
+.impact-pill{
+  margin-top:10px;font-size:12px;padding:8px 10px;border-radius:10px;
+  background:#f0f9ff;border:1px solid #bae6fd;color:#075985;
+}
+.impact-pill:empty{display:none;}
+
+/* ===== DROPZONE ===== */
+.dropzone{
+  position:relative;border:2px dashed #b4c0d9;border-radius:12px;background:#fbfcff;
+  padding:14px;text-align:center;font-size:13px;color:var(--ink-soft);cursor:pointer;
+  transition:border-color .2s ease, background .2s ease;
+}
+.dropzone.over{border-color:var(--brand);background:var(--brand-soft);}
+.dropzone b{display:block;color:var(--brand-deep);font-size:13px;}
+.dropzone input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+
+/* ===== SUMMARY REPORT ===== */
+.report{margin-top:18px;}
+.report table{width:100%;border-collapse:collapse;font-size:13px;}
+.report td,.report th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;}
+.report th{width:45%;color:var(--ink-soft);font-weight:600;}
+.report .report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+
+@media print{
+  body{background:#fff;}
+  header{background:#fff;color:#000;box-shadow:none;border:1px solid #000;}
+  header h1,header h2,header .prototype-note{color:#000;}
+  .controls,.workspace,.students,.header-actions,.report-actions,#fileError,#fileStatus{display:none!important;}
+  .report{display:block!important;box-shadow:none;border:0;}
+}
+@media(max-width:850px){header{grid-template-columns:minmax(0,1fr);} .header-actions{justify-content:flex-start;} .stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
 </style>
 </head>
 
@@ -517,14 +607,23 @@ input,select{max-width:100%;font:inherit;}
 <div class="container">
 
 <header>
-  <h1>BITS Pilani Digital</h1>
-  <h2>Advanced Grading Console</h2>
-  <p class="prototype-note">CodeForge challenge prototype · Not an official BITS grading tool</p>
+  <div>
+    <h1>BITS Pilani Digital</h1>
+    <h2>Advanced Grading Console</h2>
+    <p class="prototype-note">CodeForge challenge prototype · Not an official BITS grading tool</p>
+  </div>
+  <div class="header-actions">
+    <button id="printReport" disabled title="Print or save the course grade summary">Print course summary</button>
+  </div>
 </header>
 
 <div class="controls">
   <input id="instructor" aria-label="Instructor name (mandatory)" placeholder="Instructor name (mandatory)" required>
-  <input type="file" id="file" accept=".xlsx" aria-label="Upload student marks (.xlsx)" aria-describedby="fileError fileStatus">
+  <div class="dropzone" id="dropzone">
+    <b>Drop the marks file here</b>
+    <span id="dropLabel">or click to choose an Excel .xlsx file</span>
+    <input type="file" id="file" accept=".xlsx" aria-label="Upload student marks (.xlsx)" aria-describedby="fileError fileStatus">
+  </div>
   <select id="course" aria-label="Course" disabled><option value="">Select a course to begin</option></select>
 
   <!-- Optional, calm guidance BELOW file upload -->
@@ -561,20 +660,36 @@ input,select{max-width:100%;font:inherit;}
     <p class="chart-note">Bars: students per mark range. Red curve: normal-distribution reference, when defined.</p>
 
     <div class="stats">
-      <div class="stat">Min<br><b id="min"></b></div>
-      <div class="stat">Max<br><b id="max"></b></div>
-      <div class="stat">Avg<br><b id="avg"></b></div>
-      <div class="stat">Median<br><b id="med"></b></div>
+      <div class="stat">Min<b id="min"></b></div>
+      <div class="stat">Max<b id="max"></b></div>
+      <div class="stat">Avg<b id="avg"></b></div>
+      <div class="stat">Median<b id="med"></b></div>
+      <div class="stat">Std dev σ<b id="sd"></b></div>
+      <div class="stat">Q1 / Q3<b id="quart"></b></div>
+      <div class="stat" id="passCard">Pass rate<b id="passRate"></b></div>
+      <div class="stat">Spread<b id="skew"></b></div>
     </div>
 
     <div class="grade-summary" id="gradeSummary"></div>
+    <div class="dist-bar" id="distBar" role="img" aria-label="Grade proportion bar"></div>
+    <div class="dist-legend" id="distLegend"></div>
+    <div class="flags" id="flags" role="status"></div>
   </div>
 
   <!-- GRADING -->
   <div class="panel">
+    <div class="grace">
+      <div class="row">
+        <label for="grace">Grace marks simulator (applies to every student in this course)</label>
+        <span class="value" id="graceValue">+0</span>
+      </div>
+      <input type="range" id="grace" min="0" max="5" step="1" value="0" aria-label="Grace marks to simulate" aria-describedby="graceImpact" disabled>
+      <p class="impact" id="graceImpact">Move the slider to see how awarding grace marks would change the grades. Raw marks in your file are never changed.</p>
+    </div>
     <button class="secondary curve-btn" id="autoCurve" disabled title="Sets cutoffs from the class mean and standard deviation">Auto-Suggest Ranges (Relative Curve)</button>
     <div class="grade-grid" id="grades"></div>
     <div class="error" id="rangeError" role="alert"></div>
+    <div class="impact-pill" id="cutoffImpact" role="status"></div>
 
     <div class="actions">
       <button class="secondary" id="resetRanges" disabled>Reset Range</button>
@@ -606,10 +721,22 @@ input,select{max-width:100%;font:inherit;}
     <select id="gradeFilter" aria-label="Filter by grade"><option value="">All grades</option><option value="__border">Borderline only</option></select>
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>BITS ID</th><th>Marks</th><th>Grade</th><th>Note</th></tr></thead>
+    <thead><tr><th>BITS ID</th><th>Marks</th><th>Graded on</th><th>Grade</th><th>Note</th></tr></thead>
     <tbody id="studentRows"></tbody>
   </table></div>
 </details>
+
+<section class="panel report" id="report" hidden aria-labelledby="reportHeading">
+  <h3 id="reportHeading">Course grade summary</h3>
+  <table>
+    <tbody id="reportRows"></tbody>
+  </table>
+  <div class="report-actions">
+    <button class="secondary" id="copyReport">Copy summary</button>
+    <button class="secondary" id="printReport2">Print / save as PDF</button>
+  </div>
+  <p class="chart-note" id="copyStatus" role="status"></p>
+</section>
 
 </div>
 
@@ -620,9 +747,16 @@ input,select{max-width:100%;font:inherit;}
 const ui = Object.fromEntries([
   "instructor", "file", "course", "welcome", "grades", "rangeError",
   "download", "resetRanges", "hist", "min", "max", "avg", "med",
-  "gradeSummary", "timerArc", "timerText", "thankyou", "fileError", "fileStatus", "autoCurve"
+  "gradeSummary", "timerArc", "timerText", "thankyou", "fileError", "fileStatus", "autoCurve",
+  "sd", "quart", "passRate", "skew", "passCard", "distBar", "distLegend", "flags",
+  "grace", "graceValue", "graceImpact", "cutoffImpact", "dropzone", "dropLabel",
+  "report", "reportRows", "copyReport", "printReport", "printReport2", "copyStatus"
 ].map(id => [id, document.getElementById(id)]));
 const GRADES = ["A", "A-", "B", "B-", "C", "C-", "D", "E"];
+const GRADE_COLOURS = {
+  "A": "#166534", "A-": "#15803d", "B": "#4d7c0f", "B-": "#0e7490",
+  "C": "#b45309", "C-": "#c2410c", "D": "#9a3412", "E": "#b91c1c"
+};
 const DEFAULTS = {
   "A": [80,100], "A-": [70,79], "B": [60,69], "B-": [50,59],
   "C": [40,49], "C-": [30,39], "D": [20,29], "E": [0,19]
@@ -637,6 +771,28 @@ const sessions = new Map();
 const circumference = 2 * Math.PI * 40;
 const copyDefaults = () => Object.fromEntries(GRADES.map(g => [g, [...DEFAULTS[g]]]));
 const selectedRows = () => data.filter(row => row.Course === ui.course.value);
+// Grace marks are a simulation only: raw marks from the uploaded file are never
+// mutated, so the instructor can always compare "with" and "without".
+const graceMarks = () => (activeSession ? activeSession.grace : 0);
+const markOf = row => Math.min(100, Math.max(0, row["Total Marks"] + graceMarks()));
+const courseMarks = () => selectedRows().map(markOf);
+function describeStats(marks) {
+  const sorted = marks.slice().sort((a, b) => a - b);
+  const n = sorted.length;
+  if (!n) return null;
+  const mean = sorted.reduce((s, m) => s + m, 0) / n;
+  const std = Math.sqrt(sorted.reduce((s, m) => s + (m - mean) ** 2, 0) / n);
+  const at = p => {
+    const pos = (n - 1) * p;
+    const lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  };
+  const median = at(0.5);
+  return {n, mean, std, median, q1: at(0.25), q3: at(0.75),
+    min: sorted[0], max: sorted[n - 1],
+    // Pearson's second skewness coefficient: quick read on exam difficulty.
+    skew: std > 0 ? 3 * (mean - median) / std : 0};
+}
 
 function elapsedTime() {
   return activeSession ? activeSession.elapsed +
@@ -686,8 +842,18 @@ function clearWorkspace() {
   ui.resetRanges.disabled = true;
   ui.download.disabled = true;
   ui.download.classList.remove("enabled");
+  ui.grace.value = 0;
+  ui.grace.disabled = true;
+  ui.graceValue.textContent = "+0";
+  ui.cutoffImpact.textContent = "";
+  ui.copyStatus.textContent = "";
   computeStats();
   ui.gradeSummary.replaceChildren();
+  ui.distBar.replaceChildren();
+  ui.distLegend.replaceChildren();
+  ui.flags.replaceChildren();
+  ui.report.hidden = true;
+  ui.printReport.disabled = true;
   drawHistogram();
   renderTimer();
 }
@@ -807,20 +973,56 @@ ui.course.addEventListener("change", () => {
   activeSession = null;
   previousSummary = {};
   ui.thankyou.textContent = "";
+  ui.cutoffImpact.textContent = "";
   if (!ui.course.value) {
     ui.grades.replaceChildren();
+    ui.grace.disabled = true;
+    ui.grace.value = 0;
+    ui.graceValue.textContent = "+0";
     updateAll();
     renderTimer();
     return;
   }
   if (!sessions.has(ui.course.value)) sessions.set(ui.course.value, {
-    ranges: copyDefaults(), elapsed: 0, runningSince: null, finalizeCount: 0
+    ranges: copyDefaults(), elapsed: 0, runningSince: null, finalizeCount: 0, grace: 0
   });
   activeSession = sessions.get(ui.course.value);
+  ui.grace.disabled = false;
+  ui.grace.value = activeSession.grace;
+  ui.graceValue.textContent = "+" + activeSession.grace;
   buildGradeUI();
   startTimer();
   updateAll();
 });
+
+// Grace marks: faculty committees routinely debate awarding 1-5 marks to the
+// whole cohort. This shows the effect instantly, without touching the raw file.
+ui.grace.addEventListener("input", () => {
+  if (!activeSession) return;
+  const before = gradeCounts();
+  activeSession.grace = Number(ui.grace.value);
+  ui.graceValue.textContent = "+" + activeSession.grace;
+  const after = gradeCounts();
+  ui.graceImpact.textContent = describeShift(before, after, activeSession.grace);
+  markEdited();
+  updateAll();
+});
+function gradeCounts() {
+  if (!activeSession || validateRanges()) return null;
+  const counts = Object.fromEntries(GRADES.map(g => [g, 0]));
+  selectedRows().forEach(row => { counts[gradeFor(markOf(row))]++; });
+  return counts;
+}
+function describeShift(before, after, grace) {
+  if (!before || !after) return "Fix the grade ranges to see the effect of grace marks.";
+  if (!grace) return "No grace marks applied. Grades reflect the marks in your file.";
+  const rescued = after.E === undefined ? 0 : before.E - after.E;
+  const moved = GRADES.reduce((n, g, i) => n + Math.max(0, after[g] - before[g]) * (i === 0 ? 1 : 1), 0);
+  const changed = GRADES.reduce((n, g) => n + Math.abs(after[g] - before[g]), 0) / 2;
+  return `Awarding +${grace} mark${grace > 1 ? "s" : ""} to everyone moves ${Math.round(changed)} student(s) into a higher grade` +
+    (rescued > 0 ? `, including ${rescued} who would no longer be in E.` : ".") +
+    " Raw marks in your file are unchanged.";
+}
 
 ui.instructor.addEventListener("input", () => {
   if (activeSession) markEdited();
@@ -902,9 +1104,12 @@ function buildGradeUI() {
       for (let value = LOWEST - index; value <= 100 - index; value++) select.add(new Option(value, value));
       select.value = activeSession.ranges[g][0];
       select.addEventListener("change", () => {
+        const previousCut = activeSession.ranges[g][0];
+        const before = gradeCounts();
         activeSession.ranges[g][0] = Number(select.value);
         normaliseRanges(index);
         buildGradeUI(); // Re-render so every derived Max and shifted Min stays in step.
+        reportCutoffImpact(g, previousCut, activeSession.ranges[g][0], before);
         markEdited();
         updateAll();
       });
@@ -949,6 +1154,18 @@ function validateRanges() {
 function gradeFor(mark) {
   return GRADES.find(g => mark >= activeSession.ranges[g][0] && mark <= activeSession.ranges[g][1]);
 }
+// Shows, in plain numbers, what moving a cutoff just did to the cohort.
+function reportCutoffImpact(grade, from, to, before) {
+  const after = gradeCounts();
+  if (!before || !after || from === to) { ui.cutoffImpact.textContent = ""; return; }
+  const delta = after[grade] - before[grade];
+  const direction = to < from ? "Lowering" : "Raising";
+  ui.cutoffImpact.textContent =
+    `${direction} the ${grade} cutoff from ${from} to ${to} ` +
+    (delta === 0 ? `did not change the number of ${grade} grades.`
+      : `${delta > 0 ? "added" : "removed"} ${Math.abs(delta)} ${grade} grade${Math.abs(delta) > 1 ? "s" : ""}.`);
+}
+
 function updateAll() {
   const rows = selectedRows();
   const error = activeSession ? validateRanges() : "";
@@ -965,6 +1182,7 @@ function updateAll() {
   computeGradeSummary(error);
   ui.autoCurve.disabled = !activeSession || rows.length < 2;
   renderStudents(error);
+  renderReport(error);
 }
 
 const BORDER = 2; // marks within this many points below a higher cutoff are flagged
@@ -986,8 +1204,10 @@ function renderStudents(error) {
   const q = document.getElementById("studentSearch").value.trim().toLowerCase();
   const f = filterSel.value;
   let border = 0, shown = 0;
-  rows.slice().sort((a, b) => b["Total Marks"] - a["Total Marks"]).forEach(row => {
-    const mark = row["Total Marks"];
+  const grace = graceMarks();
+  rows.slice().sort((a, b) => markOf(b) - markOf(a)).forEach(row => {
+    const raw = row["Total Marks"];
+    const mark = markOf(row);
     const grade = error ? "—" : gradeFor(mark);
     const note = error ? "" : borderlineNote(mark, grade);
     if (note) border++;
@@ -996,7 +1216,8 @@ function renderStudents(error) {
     if (shown++ >= 500) return;
     const tr = document.createElement("tr");
     if (note) tr.className = "borderline";
-    [row["BITS ID"], mark, grade].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); });
+    [row["BITS ID"], raw, grace ? `${mark} (+${grace})` : mark, grade]
+      .forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); });
     const td = document.createElement("td");
     if (note) { const b = document.createElement("span"); b.className = "badge"; b.textContent = note; td.append(b); }
     tr.append(td);
@@ -1010,7 +1231,7 @@ document.getElementById("gradeFilter").addEventListener("change", () => updateAl
 // Relative grading: cutoffs at mean + k·σ, the common BITS-style curve.
 const CURVE_K = [1.5, 1.0, 0.5, 0, -0.5, -1.0, -1.5];
 ui.autoCurve.addEventListener("click", () => {
-  const marks = selectedRows().map(r => r["Total Marks"]);
+  const marks = courseMarks();
   if (marks.length < 2) return;
   const mean = marks.reduce((s, m) => s + m, 0) / marks.length;
   const std = Math.sqrt(marks.reduce((s, m) => s + (m - mean) ** 2, 0) / marks.length);
@@ -1028,7 +1249,7 @@ function drawHistogram() {
   histogramFrame = null;
   const ctx = ui.hist.getContext("2d");
   ctx.clearRect(0, 0, 380, 240);
-  const marks = selectedRows().map(row => row["Total Marks"]);
+  const marks = courseMarks();
   if (!marks.length) {
     ui.hist.setAttribute("aria-label", "Marks histogram. Select a course to view marks.");
     return;
@@ -1094,34 +1315,162 @@ function drawHistogram() {
 }
 
 function computeStats() {
-  const marks = selectedRows().map(row => row["Total Marks"]).sort((a,b) => a - b);
-  if (!marks.length) {
-    [ui.min, ui.max, ui.avg, ui.med].forEach(element => { element.textContent = "—"; });
+  const summary = describeStats(courseMarks());
+  const cells = [ui.min, ui.max, ui.avg, ui.med, ui.sd, ui.quart, ui.passRate, ui.skew];
+  if (!summary) {
+    cells.forEach(element => { element.textContent = "—"; });
+    ui.passCard.className = "stat";
     return;
   }
-  ui.min.textContent = marks[0];
-  ui.max.textContent = marks[marks.length - 1];
-  ui.avg.textContent = (marks.reduce((sum, mark) => sum + mark, 0) / marks.length).toFixed(2);
-  const middle = Math.floor(marks.length / 2);
-  ui.med.textContent = marks.length % 2 ? marks[middle] : (marks[middle - 1] + marks[middle]) / 2;
+  ui.min.textContent = summary.min;
+  ui.max.textContent = summary.max;
+  ui.avg.textContent = summary.mean.toFixed(2);
+  ui.med.textContent = Number(summary.median.toFixed(1));
+  ui.sd.textContent = summary.std.toFixed(2);
+  ui.quart.textContent = `${Number(summary.q1.toFixed(1))} / ${Number(summary.q3.toFixed(1))}`;
+  ui.skew.textContent = Math.abs(summary.skew) < 0.25 ? "Balanced"
+    : summary.skew < 0 ? "High-scoring" : "Low-scoring";
+  const counts = gradeCounts();
+  if (!counts) { ui.passRate.textContent = "—"; ui.passCard.className = "stat"; return; }
+  const passed = summary.n - counts.E;
+  const rate = passed / summary.n * 100;
+  ui.passRate.textContent = `${rate.toFixed(1)}%`;
+  ui.passCard.className = "stat " + (rate >= 90 ? "good" : rate >= 80 ? "warn" : "bad");
 }
+
 function computeGradeSummary(error) {
   ui.gradeSummary.replaceChildren();
+  ui.distBar.replaceChildren();
+  ui.distLegend.replaceChildren();
+  ui.flags.replaceChildren();
   if (!activeSession) return;
   if (error) {
     ui.gradeSummary.textContent = "Fix the grade ranges to see the distribution.";
     previousSummary = {};
     return;
   }
-  const counts = Object.fromEntries(GRADES.map(g => [g, 0]));
-  selectedRows().forEach(row => { counts[gradeFor(row["Total Marks"])]++; });
+  const counts = gradeCounts();
+  const total = selectedRows().length;
   GRADES.forEach(g => {
     const span = document.createElement("span");
     span.textContent = `${g}: ${counts[g]}`;
     ui.gradeSummary.append(span);
   });
+  // Stacked proportion bar: the share of the cohort in each grade, at a glance.
+  if (total) {
+    GRADES.forEach(g => {
+      if (!counts[g]) return;
+      const share = counts[g] / total * 100;
+      const cell = document.createElement("div");
+      cell.style.flexGrow = String(counts[g]);
+      cell.style.flexBasis = "0";
+      cell.style.background = GRADE_COLOURS[g];
+      cell.title = `${g}: ${counts[g]} student(s), ${share.toFixed(1)}%`;
+      cell.textContent = share >= 7 ? `${g} ${share.toFixed(0)}%` : "";
+      ui.distBar.append(cell);
+      const legend = document.createElement("span");
+      const swatch = document.createElement("i");
+      swatch.style.background = GRADE_COLOURS[g];
+      legend.append(swatch, document.createTextNode(`${g} · ${counts[g]} (${share.toFixed(1)}%)`));
+      ui.distLegend.append(legend);
+    });
+    ui.distBar.setAttribute("aria-label", "Grade shares: " +
+      GRADES.filter(g => counts[g]).map(g => `${g} ${(counts[g] / total * 100).toFixed(1)} percent`).join(", "));
+    renderFlags(counts, total);
+  }
   previousSummary = counts;
 }
+
+// Academic-health notices: grade inflation and failure rates are exactly what a
+// course coordinator is asked about before grades are accepted.
+function renderFlags(counts, total) {
+  const pct = n => n / total * 100;
+  const notices = [];
+  const top = counts.A + counts["A-"];
+  if (pct(top) > 25) notices.push(["", `A and A- together are ${pct(top).toFixed(1)}% of the class. Most departments expect roughly 15–25%.`]);
+  if (pct(counts.E) > 15) notices.push(["bad", `${pct(counts.E).toFixed(1)}% of students are in E. Consider reviewing the lower cutoffs or awarding grace marks.`]);
+  if (counts.A === 0 && total >= 10) notices.push(["", "No student is receiving an A. Check whether the A cutoff is too high for this cohort."]);
+  const empty = GRADES.filter(g => !counts[g]);
+  if (empty.length >= 3) notices.push(["", `These grades have no students: ${empty.join(", ")}. The scale may be wider than this cohort needs.`]);
+  if (!notices.length) notices.push(["ok", "This distribution looks healthy: no grade inflation or unusual failure rate detected."]);
+  notices.forEach(([kind, text]) => {
+    const div = document.createElement("div");
+    div.className = "flag" + (kind ? " " + kind : "");
+    div.textContent = text;
+    ui.flags.append(div);
+  });
+}
+
+// ===== COURSE SUMMARY REPORT (printable, for departmental records) =====
+function reportFacts(error) {
+  const rows = selectedRows();
+  if (!activeSession || !rows.length || error) return null;
+  const s = describeStats(courseMarks());
+  const counts = gradeCounts();
+  const elapsed = elapsedTime();
+  const grace = graceMarks();
+  return [
+    ["Course", ui.course.value],
+    ["Instructor", ui.instructor.value.trim() || "—"],
+    ["Students graded", String(s.n)],
+    ["Grace marks applied", grace ? `+${grace} to every student` : "None"],
+    ["Mean / Median", `${s.mean.toFixed(2)} / ${Number(s.median.toFixed(1))}`],
+    ["Standard deviation", s.std.toFixed(2)],
+    ["Lowest / Highest mark", `${s.min} / ${s.max}`],
+    ["Quartiles (Q1 / Q3)", `${Number(s.q1.toFixed(1))} / ${Number(s.q3.toFixed(1))}`],
+    ["Pass rate", `${((s.n - counts.E) / s.n * 100).toFixed(1)}% (${s.n - counts.E} of ${s.n})`],
+    ["Grade boundaries", GRADES.map(g => `${g} ${activeSession.ranges[g][0]}–${activeSession.ranges[g][1]}`).join(" · ")],
+    ["Grade distribution", GRADES.map(g => `${g}: ${counts[g]}`).join(" · ")],
+    ["Grading time", `${Math.floor(elapsed / 60000)} min ${Math.floor(elapsed / 1000) % 60} sec`],
+    ["Prepared", new Date().toLocaleString()]
+  ];
+}
+function renderReport(error) {
+  const facts = reportFacts(error);
+  ui.report.hidden = !facts;
+  ui.printReport.disabled = !facts;
+  ui.reportRows.replaceChildren();
+  if (!facts) return;
+  facts.forEach(([label, value]) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = label;
+    const td = document.createElement("td");
+    td.textContent = value;
+    tr.append(th, td);
+    ui.reportRows.append(tr);
+  });
+}
+ui.copyReport.addEventListener("click", async () => {
+  const facts = reportFacts(activeSession ? validateRanges() : "");
+  if (!facts) return;
+  const text = facts.map(([l, v]) => `${l}\t${v}`).join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    ui.copyStatus.textContent = "Summary copied. Paste it into Excel, email or a report.";
+  } catch {
+    ui.copyStatus.textContent = "Copying was blocked by the browser. Use Print / save as PDF instead.";
+  }
+});
+[ui.printReport, ui.printReport2].forEach(button => button.addEventListener("click", () => window.print()));
+
+// ===== DRAG AND DROP UPLOAD =====
+["dragenter", "dragover"].forEach(type => ui.dropzone.addEventListener(type, event => {
+  event.preventDefault();
+  ui.dropzone.classList.add("over");
+}));
+["dragleave", "dragend"].forEach(type => ui.dropzone.addEventListener(type, () => ui.dropzone.classList.remove("over")));
+ui.dropzone.addEventListener("drop", event => {
+  event.preventDefault();
+  ui.dropzone.classList.remove("over");
+  const dropped = event.dataTransfer?.files?.[0];
+  if (!dropped) return;
+  const transfer = new DataTransfer();
+  transfer.items.add(dropped);
+  ui.file.files = transfer.files;
+  ui.file.dispatchEvent(new Event("change"));
+});
 
 function csvCell(value) {
   let text = String(value ?? "");
