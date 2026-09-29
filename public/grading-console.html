@@ -1204,8 +1204,10 @@ function renderStudents(error) {
   const q = document.getElementById("studentSearch").value.trim().toLowerCase();
   const f = filterSel.value;
   let border = 0, shown = 0;
-  rows.slice().sort((a, b) => b["Total Marks"] - a["Total Marks"]).forEach(row => {
-    const mark = row["Total Marks"];
+  const grace = graceMarks();
+  rows.slice().sort((a, b) => markOf(b) - markOf(a)).forEach(row => {
+    const raw = row["Total Marks"];
+    const mark = markOf(row);
     const grade = error ? "—" : gradeFor(mark);
     const note = error ? "" : borderlineNote(mark, grade);
     if (note) border++;
@@ -1214,7 +1216,8 @@ function renderStudents(error) {
     if (shown++ >= 500) return;
     const tr = document.createElement("tr");
     if (note) tr.className = "borderline";
-    [row["BITS ID"], mark, grade].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); });
+    [row["BITS ID"], raw, grace ? `${mark} (+${grace})` : mark, grade]
+      .forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); });
     const td = document.createElement("td");
     if (note) { const b = document.createElement("span"); b.className = "badge"; b.textContent = note; td.append(b); }
     tr.append(td);
