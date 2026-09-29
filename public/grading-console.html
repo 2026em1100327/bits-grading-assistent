@@ -1154,6 +1154,18 @@ function validateRanges() {
 function gradeFor(mark) {
   return GRADES.find(g => mark >= activeSession.ranges[g][0] && mark <= activeSession.ranges[g][1]);
 }
+// Shows, in plain numbers, what moving a cutoff just did to the cohort.
+function reportCutoffImpact(grade, from, to, before) {
+  const after = gradeCounts();
+  if (!before || !after || from === to) { ui.cutoffImpact.textContent = ""; return; }
+  const delta = after[grade] - before[grade];
+  const direction = to < from ? "Lowering" : "Raising";
+  ui.cutoffImpact.textContent =
+    `${direction} the ${grade} cutoff from ${from} to ${to} ` +
+    (delta === 0 ? `did not change the number of ${grade} grades.`
+      : `${delta > 0 ? "added" : "removed"} ${Math.abs(delta)} ${grade} grade${Math.abs(delta) > 1 ? "s" : ""}.`);
+}
+
 function updateAll() {
   const rows = selectedRows();
   const error = activeSession ? validateRanges() : "";
@@ -1170,6 +1182,7 @@ function updateAll() {
   computeGradeSummary(error);
   ui.autoCurve.disabled = !activeSession || rows.length < 2;
   renderStudents(error);
+  renderReport(error);
 }
 
 const BORDER = 2; // marks within this many points below a higher cutoff are flagged
