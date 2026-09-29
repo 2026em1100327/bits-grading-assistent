@@ -721,10 +721,22 @@ input:hover,select:hover{border-color:#a5b4fc;}
     <select id="gradeFilter" aria-label="Filter by grade"><option value="">All grades</option><option value="__border">Borderline only</option></select>
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>BITS ID</th><th>Marks</th><th>Grade</th><th>Note</th></tr></thead>
+    <thead><tr><th>BITS ID</th><th>Marks</th><th>Graded on</th><th>Grade</th><th>Note</th></tr></thead>
     <tbody id="studentRows"></tbody>
   </table></div>
 </details>
+
+<section class="panel report" id="report" hidden aria-labelledby="reportHeading">
+  <h3 id="reportHeading">Course grade summary</h3>
+  <table>
+    <tbody id="reportRows"></tbody>
+  </table>
+  <div class="report-actions">
+    <button class="secondary" id="copyReport">Copy summary</button>
+    <button class="secondary" id="printReport2">Print / save as PDF</button>
+  </div>
+  <p class="chart-note" id="copyStatus" role="status"></p>
+</section>
 
 </div>
 
