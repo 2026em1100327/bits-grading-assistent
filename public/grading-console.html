@@ -1104,9 +1104,12 @@ function buildGradeUI() {
       for (let value = LOWEST - index; value <= 100 - index; value++) select.add(new Option(value, value));
       select.value = activeSession.ranges[g][0];
       select.addEventListener("change", () => {
+        const previousCut = activeSession.ranges[g][0];
+        const before = gradeCounts();
         activeSession.ranges[g][0] = Number(select.value);
         normaliseRanges(index);
         buildGradeUI(); // Re-render so every derived Max and shifted Min stays in step.
+        reportCutoffImpact(g, previousCut, activeSession.ranges[g][0], before);
         markEdited();
         updateAll();
       });
