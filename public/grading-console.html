@@ -1249,7 +1249,7 @@ function drawHistogram() {
   histogramFrame = null;
   const ctx = ui.hist.getContext("2d");
   ctx.clearRect(0, 0, 380, 240);
-  const marks = selectedRows().map(row => row["Total Marks"]);
+  const marks = courseMarks();
   if (!marks.length) {
     ui.hist.setAttribute("aria-label", "Marks histogram. Select a course to view marks.");
     return;
