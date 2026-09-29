@@ -607,14 +607,23 @@ input:hover,select:hover{border-color:#a5b4fc;}
 <div class="container">
 
 <header>
-  <h1>BITS Pilani Digital</h1>
-  <h2>Advanced Grading Console</h2>
-  <p class="prototype-note">CodeForge challenge prototype · Not an official BITS grading tool</p>
+  <div>
+    <h1>BITS Pilani Digital</h1>
+    <h2>Advanced Grading Console</h2>
+    <p class="prototype-note">CodeForge challenge prototype · Not an official BITS grading tool</p>
+  </div>
+  <div class="header-actions">
+    <button id="printReport" disabled title="Print or save the course grade summary">Print course summary</button>
+  </div>
 </header>
 
 <div class="controls">
   <input id="instructor" aria-label="Instructor name (mandatory)" placeholder="Instructor name (mandatory)" required>
-  <input type="file" id="file" accept=".xlsx" aria-label="Upload student marks (.xlsx)" aria-describedby="fileError fileStatus">
+  <div class="dropzone" id="dropzone">
+    <b>Drop the marks file here</b>
+    <span id="dropLabel">or click to choose an Excel .xlsx file</span>
+    <input type="file" id="file" accept=".xlsx" aria-label="Upload student marks (.xlsx)" aria-describedby="fileError fileStatus">
+  </div>
   <select id="course" aria-label="Course" disabled><option value="">Select a course to begin</option></select>
 
   <!-- Optional, calm guidance BELOW file upload -->
