@@ -842,8 +842,18 @@ function clearWorkspace() {
   ui.resetRanges.disabled = true;
   ui.download.disabled = true;
   ui.download.classList.remove("enabled");
+  ui.grace.value = 0;
+  ui.grace.disabled = true;
+  ui.graceValue.textContent = "+0";
+  ui.cutoffImpact.textContent = "";
+  ui.copyStatus.textContent = "";
   computeStats();
   ui.gradeSummary.replaceChildren();
+  ui.distBar.replaceChildren();
+  ui.distLegend.replaceChildren();
+  ui.flags.replaceChildren();
+  ui.report.hidden = true;
+  ui.printReport.disabled = true;
   drawHistogram();
   renderTimer();
 }
