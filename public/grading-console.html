@@ -660,20 +660,36 @@ input:hover,select:hover{border-color:#a5b4fc;}
     <p class="chart-note">Bars: students per mark range. Red curve: normal-distribution reference, when defined.</p>
 
     <div class="stats">
-      <div class="stat">Min<br><b id="min"></b></div>
-      <div class="stat">Max<br><b id="max"></b></div>
-      <div class="stat">Avg<br><b id="avg"></b></div>
-      <div class="stat">Median<br><b id="med"></b></div>
+      <div class="stat">Min<b id="min"></b></div>
+      <div class="stat">Max<b id="max"></b></div>
+      <div class="stat">Avg<b id="avg"></b></div>
+      <div class="stat">Median<b id="med"></b></div>
+      <div class="stat">Std dev σ<b id="sd"></b></div>
+      <div class="stat">Q1 / Q3<b id="quart"></b></div>
+      <div class="stat" id="passCard">Pass rate<b id="passRate"></b></div>
+      <div class="stat">Spread<b id="skew"></b></div>
     </div>
 
     <div class="grade-summary" id="gradeSummary"></div>
+    <div class="dist-bar" id="distBar" role="img" aria-label="Grade proportion bar"></div>
+    <div class="dist-legend" id="distLegend"></div>
+    <div class="flags" id="flags" role="status"></div>
   </div>
 
   <!-- GRADING -->
   <div class="panel">
+    <div class="grace">
+      <div class="row">
+        <label for="grace">Grace marks simulator (applies to every student in this course)</label>
+        <span class="value" id="graceValue">+0</span>
+      </div>
+      <input type="range" id="grace" min="0" max="5" step="1" value="0" aria-label="Grace marks to simulate" aria-describedby="graceImpact" disabled>
+      <p class="impact" id="graceImpact">Move the slider to see how awarding grace marks would change the grades. Raw marks in your file are never changed.</p>
+    </div>
     <button class="secondary curve-btn" id="autoCurve" disabled title="Sets cutoffs from the class mean and standard deviation">Auto-Suggest Ranges (Relative Curve)</button>
     <div class="grade-grid" id="grades"></div>
     <div class="error" id="rangeError" role="alert"></div>
+    <div class="impact-pill" id="cutoffImpact" role="status"></div>
 
     <div class="actions">
       <button class="secondary" id="resetRanges" disabled>Reset Range</button>
