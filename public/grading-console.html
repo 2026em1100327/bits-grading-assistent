@@ -1231,7 +1231,7 @@ document.getElementById("gradeFilter").addEventListener("change", () => updateAl
 // Relative grading: cutoffs at mean + k·σ, the common BITS-style curve.
 const CURVE_K = [1.5, 1.0, 0.5, 0, -0.5, -1.0, -1.5];
 ui.autoCurve.addEventListener("click", () => {
-  const marks = selectedRows().map(r => r["Total Marks"]);
+  const marks = courseMarks();
   if (marks.length < 2) return;
   const mean = marks.reduce((s, m) => s + m, 0) / marks.length;
   const std = Math.sqrt(marks.reduce((s, m) => s + (m - mean) ** 2, 0) / marks.length);
