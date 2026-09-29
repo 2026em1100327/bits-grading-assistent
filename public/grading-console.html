@@ -747,9 +747,16 @@ input:hover,select:hover{border-color:#a5b4fc;}
 const ui = Object.fromEntries([
   "instructor", "file", "course", "welcome", "grades", "rangeError",
   "download", "resetRanges", "hist", "min", "max", "avg", "med",
-  "gradeSummary", "timerArc", "timerText", "thankyou", "fileError", "fileStatus", "autoCurve"
+  "gradeSummary", "timerArc", "timerText", "thankyou", "fileError", "fileStatus", "autoCurve",
+  "sd", "quart", "passRate", "skew", "passCard", "distBar", "distLegend", "flags",
+  "grace", "graceValue", "graceImpact", "cutoffImpact", "dropzone", "dropLabel",
+  "report", "reportRows", "copyReport", "printReport", "printReport2", "copyStatus"
 ].map(id => [id, document.getElementById(id)]));
 const GRADES = ["A", "A-", "B", "B-", "C", "C-", "D", "E"];
+const GRADE_COLOURS = {
+  "A": "#166534", "A-": "#15803d", "B": "#4d7c0f", "B-": "#0e7490",
+  "C": "#b45309", "C-": "#c2410c", "D": "#9a3412", "E": "#b91c1c"
+};
 const DEFAULTS = {
   "A": [80,100], "A-": [70,79], "B": [60,69], "B-": [50,59],
   "C": [40,49], "C-": [30,39], "D": [20,29], "E": [0,19]
@@ -764,6 +771,28 @@ const sessions = new Map();
 const circumference = 2 * Math.PI * 40;
 const copyDefaults = () => Object.fromEntries(GRADES.map(g => [g, [...DEFAULTS[g]]]));
 const selectedRows = () => data.filter(row => row.Course === ui.course.value);
+// Grace marks are a simulation only: raw marks from the uploaded file are never
+// mutated, so the instructor can always compare "with" and "without".
+const graceMarks = () => (activeSession ? activeSession.grace : 0);
+const markOf = row => Math.min(100, Math.max(0, row["Total Marks"] + graceMarks()));
+const courseMarks = () => selectedRows().map(markOf);
+function describeStats(marks) {
+  const sorted = marks.slice().sort((a, b) => a - b);
+  const n = sorted.length;
+  if (!n) return null;
+  const mean = sorted.reduce((s, m) => s + m, 0) / n;
+  const std = Math.sqrt(sorted.reduce((s, m) => s + (m - mean) ** 2, 0) / n);
+  const at = p => {
+    const pos = (n - 1) * p;
+    const lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  };
+  const median = at(0.5);
+  return {n, mean, std, median, q1: at(0.25), q3: at(0.75),
+    min: sorted[0], max: sorted[n - 1],
+    // Pearson's second skewness coefficient: quick read on exam difficulty.
+    skew: std > 0 ? 3 * (mean - median) / std : 0};
+}
 
 function elapsedTime() {
   return activeSession ? activeSession.elapsed +
